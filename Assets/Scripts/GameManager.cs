@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -24,8 +25,9 @@ public class GameManager : MonoBehaviour
     public TMP_Text earnedText;
     public AudioSource bgm;
     public TMP_Text muteText, customerRateText, customerWaitText, newCustomerInText, catsPlacedText;
-    public GameObject gameOverText;
+    public GameObject gameOverText, gameOverMMButton;
     public GameObject audioManager;
+    public GameObject instructionsPanel;
 
     private bool _bgmPlaying = true;
     private int _turnsUntilNewCustomer;
@@ -69,9 +71,9 @@ public class GameManager : MonoBehaviour
         turnsUntilNewCustomer = 8 - (int)Mathf.Floor(catsPlaced / 20);
         turnsCustomerWillWait = 10 - (int)Mathf.Floor(catsPlaced / 30);
 
-        customerWaitText.text = $"{turnsCustomerWillWait} minutes";
-        customerRateText.text = $"{turnsUntilNewCustomer} minutes";
-        newCustomerInText.text = $"{_turnsUntilNewCustomer} minutes";
+        customerWaitText.text = $"{turnsCustomerWillWait} turns";
+        customerRateText.text = $"{turnsUntilNewCustomer} turns";
+        newCustomerInText.text = $"{_turnsUntilNewCustomer} turns";
         catsPlacedText.text = $"Cats placed: {catsPlaced}";
     }
 
@@ -99,6 +101,17 @@ public class GameManager : MonoBehaviour
     {
         gameOver = true;
         gameOverText.SetActive(true);
-        audioManager.GetComponent<AudioSource>().Play();
+        gameOverMMButton.SetActive(true);
+        audioManager.GetComponent<AudioManager>().PlayLose();
+    }
+
+    public void GoToMainMenu()
+    {
+        SceneManager.LoadScene(0);
+    }
+
+    public void HideInstructions()
+    {
+        instructionsPanel.SetActive(false);
     }
 }
