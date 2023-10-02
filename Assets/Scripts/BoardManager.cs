@@ -28,9 +28,12 @@ public class BoardManager : MonoBehaviour
     [SerializeField]
     public List<GameObject> negativePrefabs;
 
+    public GameObject audioManager;
+
     public GameObject emptyTilePrefab;
     public GameObject customerPrefab;
 
+    [HideInInspector]
     public Image uiNextCatominoImage;
 
     private GameObject _nextCatomino;
@@ -117,23 +120,31 @@ public class BoardManager : MonoBehaviour
 
                 if (tile != null)
                 {
-                    float xPos = boardBottomLeft.x + colNum;
-                    float yPos = boardBottomLeft.y + rowNum;
-
-                    if(tile.CompareTag("Catomino"))
-                    {
-                        xPos += tile.GetComponent<Catomino>().placementOffset.x;
-                        yPos += tile.GetComponent<Catomino>().placementOffset.y;
-                    }
-
-                    _instantiatedBoardObjects.Add(Instantiate(tile, new Vector2(xPos, yPos), Quaternion.identity));
-                    if(_instantiatedBoardObjects.Last().CompareTag("Catomino"))
-                        _instantiatedBoardObjects.Last().GetComponent<Catomino>().myBoardLocation = new int[] {colNum, rowNum};
-                    else if (_instantiatedBoardObjects.Last().CompareTag("Customer"))
-                        _instantiatedBoardObjects.Last().GetComponent<Customer>().myBoardLocation = new int[] { colNum, rowNum };
+                    InstantiateSingleGameObject(tile, colNum, rowNum);
                 }
             }
         }
+    }
+
+    public void InstantiateSingleGameObject(GameObject tile, int _xPos, int _yPos)
+    {
+        float xPos = boardBottomLeft.x + _xPos;
+        float yPos = boardBottomLeft.y + _yPos;
+
+        if (tile.CompareTag("Catomino"))
+        {
+            xPos += tile.GetComponent<Catomino>().placementOffset.x;
+            yPos += tile.GetComponent<Catomino>().placementOffset.y;
+        }
+
+        _instantiatedBoardObjects.Add(Instantiate(tile, new Vector2(xPos, yPos), Quaternion.identity));
+
+        if (_instantiatedBoardObjects.Last().CompareTag("Catomino"))
+            _instantiatedBoardObjects.Last().GetComponent<Catomino>().myBoardLocation = new int[] { _xPos, _yPos };
+        else if (_instantiatedBoardObjects.Last().CompareTag("Customer"))
+            _instantiatedBoardObjects.Last().GetComponent<Customer>().myBoardLocation = new int[] { _xPos, _yPos };
+
+        board[_yPos][_xPos] = _instantiatedBoardObjects.Last();
     }
     
     public void VisualizeUnderboard()
@@ -231,6 +242,8 @@ public class BoardManager : MonoBehaviour
         float newHeight = (originalSize.y / originalSize.x) * uiImage.rectTransform.rect.width;
 
         uiImage.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, newHeight);
+
+        if (checkNoValidPlaces()) GameManager.instance.GameOver();
     }
 
     public void PlaceNextCatomino(int[] boardPos)
@@ -288,13 +301,15 @@ public class BoardManager : MonoBehaviour
             }
         }
 
-        GameManager.instance.IncreaeCatsPlaced();
+        audioManager.GetComponent<AudioManager>().PlayMeow();
 
-        ReduceAllCustomersPatience();
+        GameManager.instance.IncreaeCatsPlaced();
 
         VisualizeBoard();
 
         CheckCustomersSurrounded();
+
+        ReduceAllCustomersPatience();
 
         ChooseNextCatomino();
     }
@@ -415,6 +430,8 @@ public class BoardManager : MonoBehaviour
                 }
 
                 _customerLocations.Remove(custLoc);
+
+                audioManager.GetComponent<AudioManager>().PlayCustomerPaid();
             }
         }
 
@@ -465,6 +482,48 @@ public class BoardManager : MonoBehaviour
                 obj.GetComponent<Customer>().LowerPatience();
             }
         }
+    }
+
+    public bool checkNoValidPlaces()
+    {
+        List<int[]> validDrops = new List<int[]>();
+
+        for (int rowNum = 0; rowNum < logicalBoard.Count; rowNum++)
+        {
+            for (int colNum = 0; colNum < logicalBoard[rowNum].Count; colNum++)
+            {
+                if (!logicalBoard[rowNum][colNum]) validDrops.Add(new int[] { colNum, rowNum });
+            }
+        }
+
+        if( validDrops.Count > 32 ) { return false; }
+
+        Debug.LogWarning($"Checking these places: {string.Join(" || ", validDrops.Select(x => string.Join(",", x)))}");
+
+        bool foundDropLoc = false;
+
+        foreach (int[] dropLoc in validDrops)
+        {
+            List<int[]> overlappedSquares = _nextCatomino.GetComponent<Catomino>().GetOverlappingSquares(dropLoc);
+
+            bool validDropLocation = true;
+            Debug.Log($"Drop location being checked: ({dropLoc[0]},{dropLoc[1]})");
+            foreach (int[] sq in overlappedSquares)
+            {
+                Debug.Log($"Checking overlap square ({sq[0]},{sq[1]})");
+                if (sq[0] < 0 || sq[0] >= width || sq[1] < 0 || sq[1] >= height) validDropLocation = false;
+                else if (logicalBoard[sq[1]][sq[0]]) validDropLocation = false;
+            }
+
+            if (validDropLocation)
+            {
+                Debug.LogWarning($"You can drop it at ({dropLoc[0]},{dropLoc[1]})");
+                foundDropLoc = true;
+                break;
+            }
+        }
+
+        return !foundDropLoc;
     }
 
     public Vector2 BoardPositionToGOPosition(int x, int y)
