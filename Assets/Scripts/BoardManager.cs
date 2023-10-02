@@ -117,23 +117,31 @@ public class BoardManager : MonoBehaviour
 
                 if (tile != null)
                 {
-                    float xPos = boardBottomLeft.x + colNum;
-                    float yPos = boardBottomLeft.y + rowNum;
-
-                    if(tile.CompareTag("Catomino"))
-                    {
-                        xPos += tile.GetComponent<Catomino>().placementOffset.x;
-                        yPos += tile.GetComponent<Catomino>().placementOffset.y;
-                    }
-
-                    _instantiatedBoardObjects.Add(Instantiate(tile, new Vector2(xPos, yPos), Quaternion.identity));
-                    if(_instantiatedBoardObjects.Last().CompareTag("Catomino"))
-                        _instantiatedBoardObjects.Last().GetComponent<Catomino>().myBoardLocation = new int[] {colNum, rowNum};
-                    else if (_instantiatedBoardObjects.Last().CompareTag("Customer"))
-                        _instantiatedBoardObjects.Last().GetComponent<Customer>().myBoardLocation = new int[] { colNum, rowNum };
+                    InstantiateSingleGameObject(tile, colNum, rowNum);
                 }
             }
         }
+    }
+
+    public void InstantiateSingleGameObject(GameObject tile, int _xPos, int _yPos)
+    {
+        float xPos = boardBottomLeft.x + _xPos;
+        float yPos = boardBottomLeft.y + _yPos;
+
+        if (tile.CompareTag("Catomino"))
+        {
+            xPos += tile.GetComponent<Catomino>().placementOffset.x;
+            yPos += tile.GetComponent<Catomino>().placementOffset.y;
+        }
+
+        _instantiatedBoardObjects.Add(Instantiate(tile, new Vector2(xPos, yPos), Quaternion.identity));
+
+        if (_instantiatedBoardObjects.Last().CompareTag("Catomino"))
+            _instantiatedBoardObjects.Last().GetComponent<Catomino>().myBoardLocation = new int[] { _xPos, _yPos };
+        else if (_instantiatedBoardObjects.Last().CompareTag("Customer"))
+            _instantiatedBoardObjects.Last().GetComponent<Customer>().myBoardLocation = new int[] { _xPos, _yPos };
+
+        board[_yPos][_xPos] = _instantiatedBoardObjects.Last();
     }
     
     public void VisualizeUnderboard()
