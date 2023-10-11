@@ -97,7 +97,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9026dc360b869e54598f1ac0f12e3570, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  turnsUntilLeaves: 10
+  turnsUntilLeaves: 12
   patienceSprites:
   - {fileID: 21300000, guid: c745bd93bf5c68f449ccd6f3d4ddf12a, type: 3}
   - {fileID: 21300000, guid: c745bd93bf5c68f449ccd6f3d4ddf12a, type: 3}

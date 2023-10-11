@@ -37,6 +37,7 @@ public class BoardManager : MonoBehaviour
     public Image uiNextCatominoImage;
 
     private GameObject _nextCatomino;
+    private GameObject _guideline;
     private List<GameObject> _instantiatedBoardObjects;
     private List<int[]> _customerLocations;
 
@@ -59,10 +60,30 @@ public class BoardManager : MonoBehaviour
             Debug.LogWarning("ERROR: No catomino prefabs added in editor!");
         if(!emptyTilePrefab)
             Debug.LogWarning("ERROR: No empty tile prefab added in editor!");
+    }
 
+    private void Start()
+    {
         GenerateUnderboard();
         AddCustomer();
         ChooseNextCatomino();
+
+        _guideline = Instantiate(_nextCatomino, new Vector3(-100f, -100f, 0), Quaternion.identity);
+        _guideline.GetComponent<SpriteRenderer>().sortingOrder = 5;
+    }
+
+    public void Update()
+    {
+        Vector2 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        pos.x = Mathf.Floor(pos.x + 0.5f);
+        pos.y = Mathf.Floor(pos.y + 0.5f);
+
+        pos.x += _nextCatomino.GetComponent<Catomino>().placementOffset.x;
+        pos.y += _nextCatomino.GetComponent<Catomino>().placementOffset.y;
+
+        // if(pos.x > boardBottomLeft.x &&  pos.y > boardBottomLeft.y)
+
+        UpdateCatominoGuidePosition(pos);
     }
 
     public void DestroyBoard()
@@ -203,10 +224,13 @@ public class BoardManager : MonoBehaviour
             Debug.Log($"Position of new customer: X: {xPos} Y: {yPos}");
 
             board[yPos][xPos] = customerPrefab;
+            board[yPos][xPos].GetComponent<Customer>().turnsUntilLeaves = GameManager.instance.turnsCustomerWillWait;
             logicalBoard[yPos][xPos] = true;
             _customerLocations.Add(new int[] { xPos, yPos });
 
             VisualizeBoard();
+
+            CheckCustomersSurrounded();
         }
     }
 
@@ -301,6 +325,8 @@ public class BoardManager : MonoBehaviour
             }
         }
 
+        GameManager.instance.turnsSinceCustomerLastPaid++;
+
         audioManager.GetComponent<AudioManager>().PlayMeow();
 
         GameManager.instance.IncreaeCatsPlaced();
@@ -312,6 +338,12 @@ public class BoardManager : MonoBehaviour
         ReduceAllCustomersPatience();
 
         ChooseNextCatomino();
+
+        if (GetNumberOfCustomersOnBoard() == 0)
+        {
+            AddCustomer();
+            GameManager.instance.ResetCustomerWaitCounter();
+        }
     }
 
     public void CheckCustomersSurrounded()
@@ -438,6 +470,11 @@ public class BoardManager : MonoBehaviour
         VisualizeBoard();
     }
 
+    public int GetNumberOfCustomersOnBoard()
+    {
+        return _customerLocations.Count;
+    }
+
     public void RemoveCatomino(int xPos, int yPos)
     {
         Debug.Log($"Trying to remove catomino at ({xPos},{yPos})");
@@ -532,6 +569,15 @@ public class BoardManager : MonoBehaviour
         float yPos = boardBottomLeft.y + y;
 
         return new Vector2(xPos, yPos);
+    }
+
+    public void UpdateCatominoGuidePosition(Vector2 loc)
+    {
+        if(_guideline != null)
+        {
+            _guideline.transform.position = loc;
+            _guideline.GetComponent<SpriteRenderer>().sprite = _nextCatomino.GetComponent<SpriteRenderer>().sprite;
+        }
     }
 
     public int[] GOPosToBoardPosition(Vector2 position)
