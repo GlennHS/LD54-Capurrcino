@@ -15,10 +15,13 @@ public class GameManager : MonoBehaviour
     public int catsPlaced = 0;
 
     [HideInInspector]
-    public int turnsUntilNewCustomer = 8;
+    public int turnsUntilNewCustomer = 6;
     
     [HideInInspector]
-    public int turnsCustomerWillWait = 10;
+    public int turnsCustomerWillWait = 12;
+
+    [HideInInspector]
+    public int turnsSinceCustomerLastPaid = 0;
 
     public bool gameOver;
 
@@ -60,16 +63,22 @@ public class GameManager : MonoBehaviour
         if(_turnsUntilNewCustomer == 0)
         {
             BoardManager.instance.AddCustomer();
-            _turnsUntilNewCustomer = turnsUntilNewCustomer;
+            ResetCustomerWaitCounter();
         }
 
         UpdateGameVars();
     }
 
+    public void ResetCustomerWaitCounter()
+    {
+        _turnsUntilNewCustomer = turnsUntilNewCustomer;
+        UpdateGameVars();
+    }
+
     public void UpdateGameVars()
     {
-        turnsUntilNewCustomer = 8 - (int)Mathf.Floor(catsPlaced / 20);
-        turnsCustomerWillWait = 10 - (int)Mathf.Floor(catsPlaced / 30);
+        turnsUntilNewCustomer = 6 - (int)Mathf.Floor(catsPlaced / 20);
+        turnsCustomerWillWait = 12 - (int)Mathf.Floor(catsPlaced / 30);
 
         customerWaitText.text = $"{turnsCustomerWillWait} turns";
         customerRateText.text = $"{turnsUntilNewCustomer} turns";
@@ -94,8 +103,22 @@ public class GameManager : MonoBehaviour
 
     public void CustomerPaid(int turnsRemaining)
     {
-        score += Random.Range(10f, 20f) + Random.Range(0.5f, 2f) * turnsRemaining + (2 / turnsCustomerWillWait) * Random.Range(0.25f, 1f);
-    }
+        float customerPayment = Random.Range(10f, 20f) + Random.Range(0.5f, 2f) * turnsRemaining + (2 / turnsCustomerWillWait) * Random.Range(0.25f, 1f);
+
+        // Customer satisfied in same turn as another
+        if(turnsSinceCustomerLastPaid == 0)
+        {
+            customerPayment *= 2;
+        }
+        else if(turnsSinceCustomerLastPaid == 1)
+        {
+            customerPayment *= 1.5f;
+        }
+
+        score += customerPayment;
+
+        turnsSinceCustomerLastPaid = 0;
+}
 
     public void GameOver()
     {
@@ -109,9 +132,19 @@ public class GameManager : MonoBehaviour
     {
         SceneManager.LoadScene(0);
     }
+    
+    public void RestartScene()
+    {
+        SceneManager.LoadScene(1);
+    }
 
     public void HideInstructions()
     {
         instructionsPanel.SetActive(false);
+    }
+    
+    public void ShowInstructions()
+    {
+        instructionsPanel.SetActive(true);
     }
 }
